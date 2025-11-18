@@ -83,7 +83,7 @@ function enableTextSelectionTranslation({ translate }) {
     if (selectedText && selectedText.length >= 3 && selectedText !== lastSelectedText) {
       lastSelectedText = selectedText;
       lastSelectionTime = Date.now();
-      
+
       // 1초 후에 번역 시작
       selectionTimeout = setTimeout(async () => {
         try {
@@ -157,18 +157,22 @@ function enableTextSelectionTranslation({ translate }) {
           currentSelectionTooltip = tooltip;
 
           // X 버튼 클릭 이벤트 추가
-          const closeBtn = tooltip.querySelector('.close-btn');
-          closeBtn.addEventListener('click', () => {
-            if (currentSelectionTooltip) {
-              currentSelectionTooltip.remove();
+          const closeBtn = tooltip.querySelector(".close-btn");
+          closeBtn.addEventListener("click", () => {
+            if (tooltip.parentNode) {
+              tooltip.remove();
+            }
+            if (currentSelectionTooltip === tooltip) {
               currentSelectionTooltip = null;
             }
           });
 
           // 15초 후 자동 제거
           setTimeout(() => {
-            if (currentSelectionTooltip) {
-              currentSelectionTooltip.remove();
+            if (tooltip.parentNode) {
+              tooltip.remove();
+            }
+            if (currentSelectionTooltip === tooltip) {
               currentSelectionTooltip = null;
             }
           }, 15000);
@@ -182,7 +186,7 @@ function enableTextSelectionTranslation({ translate }) {
       selectionCheckInterval = setInterval(() => {
         const currentSelection = window.getSelection();
         const currentText = currentSelection.toString().trim();
-        
+
         // 선택이 해제되었거나 다른 텍스트가 선택된 경우
         if (currentText !== selectedText || currentText.length === 0) {
           clearTimeout(selectionTimeout);
@@ -345,7 +349,7 @@ function isExtensionContextValid() {
 function retryWithDelay(fn, maxRetries = 3, delay = 1000) {
   return new Promise((resolve, reject) => {
     let retries = 0;
-    
+
     function attempt() {
       try {
         if (!isExtensionContextValid()) {
@@ -363,7 +367,7 @@ function retryWithDelay(fn, maxRetries = 3, delay = 1000) {
         }
       }
     }
-    
+
     attempt();
   });
 }
@@ -378,12 +382,12 @@ function retryWithDelay(fn, maxRetries = 3, delay = 1000) {
     if (translationCache.has(text)) {
       return translationCache.get(text);
     }
-    
+
     // 확장 프로그램 컨텍스트 확인
     if (!isExtensionContextValid()) {
       return "[확장 프로그램 오류 - 페이지 새로고침 필요]";
     }
-    
+
     // OpenAI API 키를 chrome.storage.local에서 읽어옴
     return new Promise((resolve) => {
       try {
@@ -455,7 +459,7 @@ function retryWithDelay(fn, maxRetries = 3, delay = 1000) {
     } catch (error) {
       console.error("단어 툴팁 활성화 오류:", error);
     }
-    
+
     try {
       // 텍스트 선택 번역 기능 활성화
       enableTextSelectionTranslation({ translate: translateFunction });

@@ -171,3 +171,73 @@ describe("auto tooltip on plain text words", () => {
     expect(tooltip.textContent).toBe("테스트(OpenAI)");
   });
 });
+
+describe("selection tooltip close button", () => {
+  let originalGetSelection;
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+    originalGetSelection = window.getSelection;
+  });
+
+  afterEach(() => {
+    window.getSelection = originalGetSelection;
+    jest.useRealTimers();
+    document.body.innerHTML = "";
+  });
+
+  it("allows closing older selection tooltips individually", async () => {
+    document.body.innerHTML = `<div id="text">Some selectable text content here.</div>`;
+
+    const { enableTextSelectionTranslation } = require("./content-script");
+
+    const translate = jest
+      .fn()
+      .mockImplementation((text) => Promise.resolve(`번역:${text}`));
+
+    let currentText = "";
+    const rangeMock = {
+      getBoundingClientRect: () => ({
+        left: 0,
+        right: 0,
+        top: 0,
+        bottom: 10,
+        width: 100,
+        height: 10,
+      }),
+    };
+    const selectionMock = {
+      toString: () => currentText,
+      getRangeAt: () => rangeMock,
+    };
+
+    window.getSelection = jest.fn(() => selectionMock);
+
+    enableTextSelectionTranslation({ translate });
+
+    async function triggerSelection(text) {
+      currentText = text;
+      const mouseUpEvent = new MouseEvent("mouseup", { bubbles: true });
+      document.dispatchEvent(mouseUpEvent);
+      jest.advanceTimersByTime(500);
+      await Promise.resolve();
+      await Promise.resolve();
+    }
+
+    await triggerSelection("first selection text");
+    const firstTooltip = document.querySelector(".selection-tooltip");
+    expect(firstTooltip).not.toBeNull();
+
+    await triggerSelection("second selection text");
+    const tooltips = document.querySelectorAll(".selection-tooltip");
+    expect(tooltips.length).toBe(2);
+
+    const [first, second] = tooltips;
+    const firstCloseButton = first.querySelector(".close-btn");
+
+    firstCloseButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(document.body.contains(first)).toBe(false);
+    expect(document.body.contains(second)).toBe(true);
+  });
+});
